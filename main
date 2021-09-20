@@ -1,0 +1,255 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+
+using namespace std;
+
+const string FNAME = "phonebook";
+
+struct bookRecord {
+    string name;
+    string phone;
+    string note;
+};
+
+vector<bookRecord> recs;
+
+bool loadFromFile(string fn)
+{
+    ifstream fin(fn);
+
+    if (fin.bad() || !fin.is_open())
+    {
+        fin.close();
+        return false;
+    }
+
+    recs.clear();
+
+    while (!fin.eof())
+    {
+        bookRecord t;
+        if (!getline(fin, t.name) ||
+            !getline(fin, t.phone) ||
+            !getline(fin, t.note))
+            break;
+        recs.push_back(t);
+    }
+
+    fin.close();
+    return true;
+}
+
+bool saveToFile(string fn)
+{
+    ofstream fout(fn);
+
+    if (fout.bad() || !fout.is_open())
+    {
+        fout.close();
+        return false;
+    }
+
+    for (int i = 0; i < recs.size(); i++)
+    {
+        fout << recs[i].name << endl
+            << recs[i].phone << endl
+            << recs[i].note << endl;
+    }
+
+    fout.close();
+    return true;
+}
+
+void writeRecord(int i)
+{
+    cout << i + 1 << ". " << recs[i].name
+        << "\t" << recs[i].phone << " | ";
+    int sz = 60 - recs[i].name.size() - recs[i].phone.size();
+    if (recs[i].note.size() > sz)
+        cout << recs[i].note.substr(0, sz) << "...";
+    else cout << recs[i].note;
+    cout << endl;
+}
+
+int findRecord()
+{
+    int sel;
+
+    cout << "Вам нужно найти запись:" << endl
+        << "1. По порядковому номеру" << endl
+        << "2. По имени, номеру телефона или заметке" << endl
+        << "\n\n > ";
+
+    cin >> sel;
+    cout << endl;
+
+    if (sel == 2)
+    {
+        string val;
+        cout << "Введите значение для поиска: ";
+        cin.ignore();
+        getline(cin, val);
+
+        for (int i = 0; i < recs.size(); i++)
+            if (recs[i].name.find(val) != recs[i].name.npos ||
+                recs[i].note.find(val) != recs[i].note.npos ||
+                recs[i].phone == val)
+                writeRecord(i);
+
+        cout << endl;
+    }
+
+    int number = 0;
+    bool fail = false;
+
+    cout << "Введите порядковый номер записи: ";
+    cin >> number;
+    cin.ignore();
+
+    return (number < 1 || number > recs.size()) ? -1 : number - 1;
+}
+
+void writeRecords()
+{
+    cout << "Всего " << recs.size() << " записей:" << endl;
+
+    for (int i = 0; i < recs.size(); i++)
+        writeRecord(i);
+
+    cin.get();
+}
+
+void addRecord()
+{
+    bookRecord r;
+    cout << "\n\n\t\t[ Добавление новой записи ]\n\n";
+
+    cout << "Введите номер телефона: ";
+    getline(cin, r.phone);
+    cout << "Введите имя записи: ";
+    getline(cin, r.name);
+    cout << "Напишите примечание к записи: " << endl;
+    getline(cin, r.note);
+
+    recs.push_back(r);
+    cout << "Новая запись с порядковым номером "
+        << recs.size() << " добавлена!" << endl;
+    cin.get();
+}
+
+void editRecord()
+{
+    cout << "\n\n\t\t[ Изменение записи ]\n\n";
+
+    int id = findRecord();
+    if (id == -1)
+    {
+        addRecord();
+        return;
+    }
+    string temp = "";
+
+    cout << "Примечаение: Чтобы оставить поле без изменений, просто нажмите Ввод.\n\n";
+
+    cout << "Введите новый номер телефона: ";
+    getline(cin, temp);
+    if (temp.size() > 0)
+        recs[id].phone = temp;
+    cout << "Введите новое имя записи: ";
+    getline(cin, temp);
+    if (temp.size() > 0)
+        recs[id].name = temp;
+    cout << "Напишите новое примечание к записи: " << endl;
+    getline(cin, temp);
+    if (temp.size() > 0)
+        recs[id].note = temp;
+
+    cout << "Запись изменена!" << endl;
+    cin.get();
+}
+
+void deleteRecord()
+{
+    cout << "\n\n\t\t[ Изменение записи ]\n\n";
+
+    char ans = 'n';
+    int id = findRecord();
+    if (id == -1)
+    {
+        cout << "Удаление не удалось!" << endl;
+        return;
+    }
+
+    cout << endl;
+    writeRecord(id);
+    cout << endl;
+    cout << "Вы уверены? (y/n)? ";
+    cin.get(ans);
+
+    if (ans == 'y' || ans == 'Y')
+    {
+        recs.erase(recs.begin() + id);
+        cout << "Запись с порядковым номером "
+            << id + 1 << " удалена!" << endl
+            << "Учтите, что все порядковые номера других записей сдвинулись!" << endl;
+        cin.ignore();
+        cin.get();
+    }
+}
+
+bool thinkMenu()
+{
+    int sel;
+
+    cout << "\n\n\t\t[ Главное меню ]\n\n";
+    cout << "1. Посмотреть список записей (" << recs.size() << ")" << endl
+        << "2. Добавить новую запись" << endl
+        << "3. Отредактировать запись" << endl
+        << "4. Удалить запись" << endl
+        << "5. Сохранить телефонную книжку" << endl
+        << "6. Сохранить и выйти" << "\n\n > ";
+
+    cin >> sel;
+    cin.ignore();
+    cout << endl;
+
+    switch (sel)
+    {
+    case 1: writeRecords(); break;
+    case 2: addRecord(); break;
+    case 3: editRecord(); break;
+    case 4: deleteRecord(); break;
+    case 5:
+        cout << (saveToFile(FNAME) ? "Сохранено!" : "Ошибка при сохранении!") << endl;
+        cin.get();
+        break;
+    case 6: return false; break;
+    default:  break;
+    }
+
+    return true;
+}
+
+int main()
+{
+    setlocale(LC_ALL, "Russian");
+
+    loadFromFile(FNAME);
+
+    while (thinkMenu()) {};
+
+    bool doTryAgain = true;
+    while (!saveToFile(FNAME) && doTryAgain)
+    {
+        cout << "\n\n\t\t[ Внимание! ]\n\n"
+            << "Возникла ошибка при сохранении файла телефонной книжки: "
+            << FNAME << "\nХотите попробовать сохранить еще раз (y/n)? ";
+        char ans = 'n';
+        cin.get(ans);
+        doTryAgain = (ans == 'y' || ans == 'Y');
+    }
+
+    return 0;
+}
